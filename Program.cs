@@ -24,49 +24,57 @@ namespace LXMusicServer
             // Configure the HTTP request pipeline.
 
             app.UseAuthorization();
-
-            app.MapGet("/play/{fileName}", (string fileName) =>
+            app.MapGet("/ok", () =>
             {
 
-                bool found = false;
-                if (System.IO.File.Exists("index.idx"))
-                {
-                    var index = System.IO.File.ReadAllLines("index.idx");
-                    foreach (var item in index)
-                    {
-                        if (item.StartsWith(fileName))
-                        {
-                            fileName = item.Substring(fileName.Length).Trim();
-                            found = true;
-                            break;
-                        }
-                    }
-                } 
-                if (!found)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    foreach (var item in System.IO.Directory.GetFiles(dir))
-                    {
-                        sb.AppendLine(ComputeMD5Hash(System.IO.Path.GetFileName(item)) + System.IO.Path.GetExtension(item) + "\t" + item);
-                    }
-                    System.IO.File.WriteAllText("index.idx", sb.ToString());
-                }
-                var filePath = Path.Combine(dir, fileName); // 指定文件的完整路径
-
-                if (!File.Exists(filePath))
-                {
-                    return Results.NotFound(); // 如果文件不存在，则返回 404 Not Found
-                }
-
-                var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-                // 返回文件流，并指定一个可选的文件名
-                return Results.File(fileStream, "audio/mpeg", fileName);
+                return "ok";
             });
 
-            app.MapPost("/musicapi", async (MusicInfo info) =>
-            {
+            app.MapGet("/play/{fileName}", (string fileName) =>
+             {
 
+                 bool found = false;
+                 if (System.IO.File.Exists("index.idx"))
+                 {
+                     var index = System.IO.File.ReadAllLines("index.idx");
+                     foreach (var item in index)
+                     {
+                         if (item.StartsWith(fileName))
+                         {
+                             fileName = item.Substring(fileName.Length).Trim();
+                             found = true;
+                             break;
+                         }
+                     }
+                 }
+                 if (!found)
+                 {
+                     StringBuilder sb = new StringBuilder();
+                     foreach (var item in System.IO.Directory.GetFiles(dir))
+                     {
+                         sb.AppendLine(ComputeMD5Hash(System.IO.Path.GetFileName(item)) + System.IO.Path.GetExtension(item) + "\t" + item);
+                     }
+                     System.IO.File.WriteAllText("index.idx", sb.ToString());
+                 }
+                 var filePath = Path.Combine(dir, fileName); // 指定文件的完整路径
+
+                 if (!File.Exists(filePath))
+                 {
+                     return Results.NotFound(); // 如果文件不存在，则返回 404 Not Found
+                 }
+
+                 var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                 // 返回文件流，并指定一个可选的文件名
+                 return Results.File(fileStream, "audio/mpeg", fileName);
+             });
+            app.MapPost("/musicapi", async (HttpContext context) =>
+            {
+                StreamReader sr = new StreamReader(context.Request.Body);
+                var body = await sr.ReadToEndAsync();
+                body = body.Replace("\\\"", "\"").Trim('"');
+               // Console.WriteLine(body);
+                MusicInfo info = System.Text.Json.JsonSerializer.Deserialize<MusicInfo>(body);
                 List<string> strings = new List<string>();
                 foreach (var item in System.IO.Directory.GetFiles(dir))
                 {
@@ -86,7 +94,6 @@ namespace LXMusicServer
                 {
                     ext = strings.First();
                 }
-
                 return new { url = domain + "/play/" + ComputeMD5Hash(System.IO.Path.GetFileName(ext)) + System.IO.Path.GetExtension(ext) };
 
             });

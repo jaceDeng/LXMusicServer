@@ -17,7 +17,7 @@
         /// <summary>
         /// 
         /// </summary>
-        public int songmid { get; set; }
+        public string songmid { get; set; }
         /// <summary>
         /// 我很忙
         /// </summary>
@@ -33,7 +33,7 @@
         /// <summary>
         /// 
         /// </summary>
-        public int albumId { get; set; }
+        public string albumId { get; set; }
 
     }
 
