@@ -29,6 +29,14 @@ namespace LXMusicServer
 
                 return "ok";
             });
+            app.MapGet("/not", () =>
+            {
+                if (File.Exists("Œ¥’“µΩ.txt"))
+                {
+                    return File.ReadAllText("Œ¥’“µΩ.txt");
+                }
+                return "not";
+            });
 
             app.MapGet("/play/{fileName}", (string fileName) =>
              {
@@ -73,7 +81,7 @@ namespace LXMusicServer
                 StreamReader sr = new StreamReader(context.Request.Body);
                 var body = await sr.ReadToEndAsync();
                 body = body.Replace("\\\"", "\"").Trim('"');
-               // Console.WriteLine(body);
+                // Console.WriteLine(body);
                 MusicInfo info = System.Text.Json.JsonSerializer.Deserialize<MusicInfo>(body);
                 List<string> strings = new List<string>();
                 foreach (var item in System.IO.Directory.GetFiles(dir))
@@ -85,7 +93,7 @@ namespace LXMusicServer
                 }
                 if (strings.Count == 0)
                 {
-                    System.IO.File.AppendAllText("notfound.log", info.name);
+                    System.IO.File.AppendAllText("Œ¥’“µΩ.txt", info.name + "|" + info.singer);
                     System.IO.File.AppendAllText("notfound.log", System.Text.Json.JsonSerializer.Serialize(info));
                     return null;
                 }
