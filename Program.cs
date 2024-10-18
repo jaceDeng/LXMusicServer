@@ -33,7 +33,7 @@ namespace LXMusicServer
             {
                 if (File.Exists("Œ¥’“µΩ.txt"))
                 {
-                    return File.ReadAllText("Œ¥’“µΩ.txt");
+                    return string.Join("\n", File.ReadAllLines("Œ¥’“µΩ.txt").Distinct());
                 }
                 return "not";
             });
@@ -93,7 +93,7 @@ namespace LXMusicServer
                 }
                 if (strings.Count == 0)
                 {
-                    System.IO.File.AppendAllText("Œ¥’“µΩ.txt", info.name + "|" + info.singer+"\r\n");
+                    System.IO.File.AppendAllText("Œ¥’“µΩ.txt", info.name + "|" + info.singer + "\r\n");
                     System.IO.File.AppendAllText("notfound.log", System.Text.Json.JsonSerializer.Serialize(info));
                     return null;
                 }
