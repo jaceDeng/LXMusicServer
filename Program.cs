@@ -93,7 +93,7 @@ namespace LXMusicServer
                 }
                 if (strings.Count == 0)
                 {
-                    System.IO.File.AppendAllText("未找到.txt", info.name + "|" + info.singer);
+                    System.IO.File.AppendAllText("未找到.txt", info.name + "|" + info.singer+"\r\n");
                     System.IO.File.AppendAllText("notfound.log", System.Text.Json.JsonSerializer.Serialize(info));
                     return null;
                 }
@@ -115,7 +115,7 @@ namespace LXMusicServer
             using (MD5 md5 = MD5.Create())
             {
                 // 步骤 2: 计算消息摘要（hash）
-                byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+                byte[] inputBytes = Encoding.UTF8.GetBytes(input);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
 
                 // 步骤 3: 将字节数组转换为字符串
