@@ -25,6 +25,13 @@ namespace LXMusicServer
                            .AllowAnyHeader();
                 });
             });
+            // 设置最大请求体大小（单位：字节）
+            builder.WebHost.UseKestrel(options =>
+            {
+                options.Limits.MaxRequestBodySize = long.MaxValue; // 设置为无限制
+                                                                   // 或者设置一个合理的上限，例如 100MB:
+                                                                   // options.Limits.MaxRequestBodySize = 100 * 1024 * 1024;
+            });
             var dir = builder.Configuration["MusicDir"];
             var domain = builder.Configuration["MusicDomain"];
 
@@ -227,8 +234,8 @@ namespace LXMusicServer
 
         function handleFiles(files) {
             if (files.length > 0) {
+                fileInput.files = files;
                 form.appendChild(fileInput); // 将文件输入附加到表单中
-
                 let fileListText = '';
                 for (let i = 0; i < files.length; i++) {
                     fileListText += `<span>${files[i].name}</span><br>`;
@@ -256,7 +263,7 @@ namespace LXMusicServer
                     throw new Error(`HTTP 错误! 状态码: ${response.status}`);
                 }
                 const data = await response.json();
-                alert(data.Message);
+                alert(data.message);
             } catch (error) {
                 console.error('错误:', error);
                 alert('上传文件失败，请检查控制台获取更多信息。');
@@ -273,7 +280,7 @@ namespace LXMusicServer
             });
             app.MapPost("/upload", async (HttpContext context) =>
             {
-                
+
                 var request = await context.Request.ReadFormAsync();
                 foreach (var file in request.Files)
                 {
@@ -283,14 +290,13 @@ namespace LXMusicServer
                         string fileName = file.FileName;
 
                         // 将文件写入磁盘
-                        using (var stream = new FileStream(Path.Combine("uploads", fileName), FileMode.Create))
+                        using (var stream = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
                         {
                             await file.CopyToAsync(stream);
                         }
                     }
-                }
-
-                return Results.Ok(new { Message = "文件上传成功" });
+                } 
+                return Results.Ok(new { message = "文件上传成功" });
             });
             app.Run();
         }
