@@ -49,7 +49,13 @@ namespace LXMusicServer
             {
                 if (File.Exists("Œ¥’“µΩ.txt"))
                 {
-                    return string.Join("\n", File.ReadAllLines("Œ¥’“µΩ.txt").Distinct());
+                    var list = File.ReadAllLines("Œ¥’“µΩ.txt").Distinct();
+                    foreach (var line in list)
+                    {
+
+                    }
+
+                    return string.Join("\n", list);
                 }
                 return "not";
             });
