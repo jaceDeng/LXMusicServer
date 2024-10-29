@@ -50,12 +50,27 @@ namespace LXMusicServer
                 if (File.Exists("未找到.txt"))
                 {
                     var list = File.ReadAllLines("未找到.txt").Distinct();
+                    List<string> list2 = new List<string>();
                     foreach (var line in list)
                     {
+                        var array = line.Split('|');
+                        bool found = false;
+                        foreach (var item in System.IO.Directory.GetFiles(dir))
+                        {
+                            if (item.IndexOf(array[0]) >= 0 && System.IO.Path.GetExtension(item) != ".lrc")
+                            {
+                                found = true;
+                                break;
 
+                            }
+                        }
+                        if (!found)
+                        {
+                            list2.Add(line);
+                        }
                     }
 
-                    return string.Join("\n", list);
+                    return string.Join("\n", list2);
                 }
                 return "not";
             });
@@ -96,7 +111,7 @@ namespace LXMusicServer
                  var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
                  // 返回文件流，并指定一个可选的文件名
-                 return Results.File(fileStream, "audio/mpeg", fileName);
+                 return Results.File(fileStream, "audio/mpeg", fileName, enableRangeProcessing: true);
              });
             app.MapPost("/musicapi", async (HttpContext context) =>
             {
@@ -145,7 +160,7 @@ namespace LXMusicServer
             margin: 0;
         }
         .container {
-            width: 300px;
+            width: 700px;
             padding: 20px;
             border: 2px dashed #ccc;
             border-radius: 8px;
@@ -301,7 +316,7 @@ namespace LXMusicServer
                             await file.CopyToAsync(stream);
                         }
                     }
-                } 
+                }
                 return Results.Ok(new { message = "文件上传成功" });
             });
             app.Run();
