@@ -86,7 +86,9 @@ namespace LXMusicServer
                 List<string> strings = new List<string>();
                 foreach (var item in System.IO.Directory.GetFiles(dir))
                 {
-                    if (item.IndexOf(info.name) >= 0 && System.IO.Path.GetExtension(item) != ".lrc")
+                    if (System.IO.Path.GetExtension(item) != ".lrc" && 
+                    (item.IndexOf(info.name) >= 0 || 
+                    CalculateJaccardSimilarity(System.IO.Path.GetFileNameWithoutExtension(item), info.name) >= 0.6))
                     {
                         strings.Add(item);
                     }
@@ -107,6 +109,37 @@ namespace LXMusicServer
             });
 
             app.Run();
+        }
+
+
+
+        // 计算两个集合的交集
+        private static HashSet<char> Intersection(HashSet<char> set1, HashSet<char> set2)
+        {
+            return new HashSet<char>(set1.Intersect(set2));
+        }
+
+        // 计算两个集合的并集
+        private static HashSet<char> Union(HashSet<char> set1, HashSet<char> set2)
+        {
+            return new HashSet<char>(set1.Union(set2));
+        }
+
+        // 计算 Jaccard 相似度
+        public static double CalculateJaccardSimilarity(string str1, string str2)
+        {
+            HashSet<char> set1 = new HashSet<char>(str1);
+            HashSet<char> set2 = new HashSet<char>(str2);
+
+            HashSet<char> intersection = Intersection(set1, set2);
+            HashSet<char> union = Union(set1, set2);
+
+            if (union.Count == 0)
+            {
+                return 1.0; // 如果两个集合都为空，Jaccard 相似度为 1
+            }
+
+            return (double)intersection.Count / union.Count;
         }
 
         public static string ComputeMD5Hash(string input)
