@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.VisualBasic;
+using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -47,6 +48,14 @@ namespace LXMusicServer
             {
 
                 return "ok";
+            });
+            app.MapGet("/lxmusicsource.js", () =>
+            {
+                var filePath = "amiaomiao.js";
+                var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                // 返回文件流，并指定一个可选的文件名
+                return Results.File(fileStream, "text/javascript", "lxmusicsource.js", enableRangeProcessing: true);
             });
             app.MapGet("/not", () =>
             {
