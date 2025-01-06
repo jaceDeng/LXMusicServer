@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.VisualBasic;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace LXMusicServer
 {
     public class Program
     {
-
+        private static HttpClient _httpClient = new HttpClient();
+        private static string apiurl;
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -34,7 +37,7 @@ namespace LXMusicServer
             });
             var dir = builder.Configuration["MusicDir"];
             var domain = builder.Configuration["MusicDomain"];
-
+            apiurl = builder.Configuration["MusicApi"];
             var app = builder.Build();
             app.UseCors("AllowAll");
             // Configure the HTTP request pipeline.
@@ -121,18 +124,27 @@ namespace LXMusicServer
                 // Console.WriteLine(body);
                 MusicInfo info = System.Text.Json.JsonSerializer.Deserialize<MusicInfo>(body);
                 List<string> strings = new List<string>();
+                var key = info.source + "_" + info.songmid.ToString();
                 foreach (var item in System.IO.Directory.GetFiles(dir))
                 {
-                    if (System.IO.Path.GetExtension(item) != ".lrc" && 
-                    (item.IndexOf(info.name) >= 0 || 
+                    if (System.IO.Path.GetExtension(item) == ".lrc") continue;
+                    //找到id的文件直接就保存
+
+                    if (item.IndexOf(key) > 0)
+                    {
+                        strings.Add(item);
+                        break;
+                    }
+                    if ((item.IndexOf(info.name) >= 0 ||
                     CalculateJaccardSimilarity(System.IO.Path.GetFileNameWithoutExtension(item), info.name) >= 0.6))
                     {
                         strings.Add(item);
+
                     }
                 }
                 if (strings.Count == 0)
                 {
-                    System.IO.File.AppendAllText("未找到.txt", info.name + "|" + info.singer + "\r\n");
+                    await DownloadMusic(info, dir);
                     System.IO.File.AppendAllText("notfound.log", System.Text.Json.JsonSerializer.Serialize(info));
                     return null;
                 }
@@ -301,6 +313,7 @@ namespace LXMusicServer
 </html>";
                 return Results.Content(html, "text/html");
             });
+
             app.MapPost("/upload", async (HttpContext context) =>
             {
 
@@ -322,6 +335,52 @@ namespace LXMusicServer
                 return Results.Ok(new { message = "文件上传成功" });
             });
             app.Run();
+        }
+
+        private static async Task DownloadMusic(MusicInfo info, string dir)
+        {
+            var pathblock = Path.Combine(dir, $"{info.name}_{info.singer}.block");
+            if (File.Exists(pathblock))
+                return;
+            System.IO.File.Create(pathblock);
+            try
+            {
+                var request = new HttpRequestMessage()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"{apiurl}/{info.source}/{info.songmid.ToString()}/320k"),
+                };
+                request.Headers.Add("X-Request-Key", "share-v2");
+                request.Headers.Add("User-Agent", "lx-usic-request/1.6.0");
+                var resp = _httpClient.Send(request);
+                var json = await resp.Content.ReadAsStringAsync();
+                var job = System.Text.Json.JsonDocument.Parse(json).RootElement;
+                if (job.GetProperty("msg").GetString() == "无法获取播放链接！")
+                {
+                    File.Delete(pathblock);
+                    return;
+                }
+                else
+                {
+                    var url = job.GetProperty("url").GetString();
+                    var st = await _httpClient.GetStreamAsync(url);
+                    // 将文件写入磁盘
+                    using (var stream = new FileStream(Path.Combine(dir, $"{info.name}_{info.singer}_{info.source}_{info.songmid.ToString()}" + System.IO.Path.GetExtension(url.Split('?').First())),
+                        FileMode.Create))
+                    {
+                        await st.CopyToAsync(stream);
+                    }
+                    File.Delete(pathblock);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.AppendAllText("notfound.log", ex.ToString());
+                File.Delete(pathblock);
+            }
+
+            System.IO.File.AppendAllText("未找到.txt", info.name + "|" + info.singer + "\r\n");
+            //File.Delete(pathblock);
         }
 
 

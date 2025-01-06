@@ -17,7 +17,7 @@
         /// <summary>
         /// 
         /// </summary>
-       // public string songmid { get; set; }
+        public object songmid { get; set; }
         /// <summary>
         /// 我很忙
         /// </summary>
